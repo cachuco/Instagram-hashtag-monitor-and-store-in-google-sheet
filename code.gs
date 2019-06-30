@@ -18,6 +18,7 @@ function getPhotos() {
     var is_video = "";
     var latlng = "";
     var formatted_address = "";
+    
     var idPhoto = data[i].node.shortcode
     var urlPhoto = "https://www.instagram.com/p/" + idPhoto + "/?__a=1";
     
@@ -28,26 +29,38 @@ function getPhotos() {
     var display_url = getDataFoto.graphql.shortcode_media.display_url;
     var accessibility_caption = getDataFoto.graphql.shortcode_media.accessibility_caption;
     var text = getDataFoto.graphql.shortcode_media.edge_media_to_caption.edges[0].node.text;
-    if (getDataFoto.graphql.shortcode_media.location != null) {
-      locationId = getDataFoto.graphql.shortcode_media.location.id;
-      locationName = getDataFoto.graphql.shortcode_media.location.name;
-      locationAddress = JSON.parse(getDataFoto.graphql.shortcode_media.location.address_json).street_address;
-      city_name = JSON.parse(getDataFoto.graphql.shortcode_media.location.address_json).city_name;
-      var response = Maps.newGeocoder().geocode(locationAddress + " " + city_name);
-      latlng = response.results[0].geometry.location.lat + "," + response.results[0].geometry.location.lng;
-      formatted_address = response.results[0].formatted_address;
-    }
     if (getDataFoto.graphql.shortcode_media.is_vieo) { 
       is_video = getDataFoto.graphql.shortcode_media.is_video; 
     }
     
-    var now = Date.now() / 1000;
-    
-    if (timestamp > lastUpdate) {
-      var sheet = ss.getSheetByName("Data");
-      sheet.appendRow([username,timestamp,urlPhoto,display_url,accessibility_caption,text,locationId,locationName,locationAddress,formatted_address,latlng,city_name,is_video,now]);
+    if (getDataFoto.graphql.shortcode_media.location != null) {
+      console.log("location info " + "de " + urlPhoto + ": ");
+      console.log(getDataFoto.graphql.shortcode_media.location);
+      
+      locationId = getDataFoto.graphql.shortcode_media.location.id;
+      locationName = getDataFoto.graphql.shortcode_media.location.name;
+      locationAddress = JSON.parse(getDataFoto.graphql.shortcode_media.location.address_json).street_address;
+      city_name = JSON.parse(getDataFoto.graphql.shortcode_media.location.address_json).city_name;
+      try {
+        var response = Maps.newGeocoder().geocode(locationAddress + " " + city_name);
+        latlng = response.results[0].geometry.location.lat + "," + response.results[0].geometry.location.lng;
+        formatted_address = response.results[0].formatted_address;
+      }
+      catch(err) {
+        console.log(err);
+        saveFoto(ss,rangeConfig,username,timestamp,urlPhoto,display_url,accessibility_caption,text,locationId,locationName,locationAddress,formatted_address,latlng,city_name,is_video);
+      }
     }
     
-    rangeConfig.setValue(now);
+    if (timestamp > lastUpdate) {
+      saveFoto(ss,rangeConfig,username,timestamp,urlPhoto,display_url,accessibility_caption,text,locationId,locationName,locationAddress,formatted_address,latlng,city_name,is_video)
+    }
   }
+}
+
+function saveFoto(ss,rangeConfig,username,timestamp,urlPhoto,display_url,accessibility_caption,text,locationId,locationName,locationAddress,formatted_address,latlng,city_name,is_video) {
+  var now = Date.now() / 1000;
+  var sheet = ss.getSheetByName("Fotos");
+  sheet.appendRow([username,timestamp,urlPhoto,display_url,accessibility_caption,text,locationId,locationName,locationAddress,formatted_address,latlng,city_name,is_video,now]);
+  rangeConfig.setValue(now);
 }
